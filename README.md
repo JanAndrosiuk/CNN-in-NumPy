@@ -26,15 +26,17 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
         metrics='accuracy'
     )
 ```
-## Simplifications / constraints
+## Simplifications / constraints / assumptions
 
-1. The model uses simple gradient descent optimizer
+1. The model uses simple gradient descent optimizer (which means constant learning rate)
 2. For now the model is static, therefore adjusting of layers order is limited
 3. Handles one image at the time
 4. Doesn't include bias matrices
 
 
-## Future improvements
+## To-be-done
+- [ ] optimization by translating to machine code (numba / cython)
+- [ ] Adding Dropout layers
 - [ ] Making one universal convolution function with adjustable parameters
 - [ ] Including bias matrices
 - [ ] Including batch size > 1
