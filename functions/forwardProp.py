@@ -1,6 +1,7 @@
 import numpy as np
 import opt_einsum as oe
 
+
 def random_filters(no_filters, size=5, features=3):
     filters_matrix = np.random.randn(
         no_filters, size, size, features

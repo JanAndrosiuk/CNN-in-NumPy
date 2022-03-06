@@ -18,7 +18,10 @@ def main():
     cnn = CNN(x_train[:1], y_train[:1])
 
     # Performing training algorithm
-    history = cnn.train(x_train, y_train)
+    cnn.train(x_train[:625], y_train[:625])
+
+    # Plot history
+    cnn.plot_history()
 
     return 1
 

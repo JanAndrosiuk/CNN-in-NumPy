@@ -1,6 +1,10 @@
 from functions.backProp import *
 from functions.forwardProp import *
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import os
+import time
 
 
 class CNN:
@@ -27,6 +31,7 @@ class CNN:
         self.eta = eta
         self.epochs = epochs
         self.use_oe = use_oe
+        self.history = None
 
         # 1.1 CALCULATE FINAL SHAPE FOR THE DENSE LAYERS
         res_shape = list(self.x_train.shape)
@@ -195,38 +200,52 @@ class CNN:
         # Split into train and validation sets
         train_val_size = int(np.floor(train_val_split * inp_array.shape[0]))
         train_x, val_x = inp_array[:train_val_size, :], inp_array[train_val_size:, :]
-        train_y, val_y = out_array[:train_val_size, :], inp_array[train_val_size:, :]
+        train_y, val_y = out_array[:train_val_size, :], out_array[train_val_size:, :]
 
         # Store the history of training over each epoch
-        losses = np.zeros((self.epochs, 2))
-        losses.fill(np.nan)
+        # [loss / accuracy x number of epochs x train / val]
+        hist = np.zeros((2, self.epochs, 2))
+        hist.fill(np.nan)
 
         for e in range(self.epochs):
 
             # 1. Train Loop
             loss_train = 0
-            for i in tqdm(range(train_x.shape[0])):
+            acc_train = 0
+            for i in tqdm(range(train_x.shape[0]), desc=f"TRAIN, epoch {e+1}/{self.epochs}"):
                 # print(train_x[i].shape, train_y[i].shape)
                 self.forward_propagate(np.expand_dims(train_x[i], 0))
+
+                # Calculate current train loss
                 loss_i = -np.log(
                     self.activations[-1][0][
                         np.where(train_y[i])[0][0]
                     ]
                 )
                 # print(f"TRAINING SAMPLE {i} LOSS: {loss_i}")
-
                 loss_train += loss_i
+
+                # Calculate current train accuracy
+                acc_train += train_y[i][self.activations[-1][0].argmax()]
+
+                # Back propagation and weight matrices update
                 self.backward_propagate(
                     np.expand_dims(train_x[i], 0),
                     np.expand_dims(train_y[i], 0)
                 )
                 self.update_weights()
-            losses[e, 0] = loss_train / train_x.shape[0]
+
+            # Save train loss and accuracy to history matrix
+            hist[0, e, 0] = loss_train / train_x.shape[0]
+            hist[1, e, 0] = acc_train / train_x.shape[0]
 
             # 2. Validation Loop
             loss_val = 0
-            for j in tqdm(range(val_x.shape[0])):
+            acc_val = 0
+            for j in tqdm(range(val_x.shape[0]), desc=f"VAL, epoch {e+1}/{self.epochs}"):
                 self.forward_propagate(np.expand_dims(val_x[j], 0))
+
+                # Calculate current validation loss
                 loss_j = -np.log(
                     self.activations[-1][0][
                         np.where(val_y[j])[0][0]
@@ -234,11 +253,60 @@ class CNN:
                 )
                 # print(f"VAL SAMPLE {i} LOSS: {loss_i}")
                 loss_val += loss_j
-            losses[e, 1] = loss_val / val_x.shape[0]
+
+                # Calculate current validation accuracy
+                # print("VAL ACC SHAPES", val_y.shape, self.activations[-1].shape)
+                acc_val += val_y[j][self.activations[-1][0].argmax()]
+
+            # Save validation loss and accuracy to history matrix
+            hist[0, e, 1] = loss_val / val_x.shape[0]
+            hist[1, e, 1] = acc_val / val_x.shape[0]
 
             # print(f"EPOCH {e}, AVERAGE TRAIN LOSS: {loss_train/train_x.shape[0]}")
 
-        return losses
+        self.history = hist
+        return 1
+
+    def plot_history(self):
+        """
+        Plot train-validation history of loss and accuracy metrics
+        :return:
+        """
+        csfont = {'fontname': 'Times New Roman'}
+        fig, axes = plt.subplots(1, 2, figsize=(18, 7))
+        # axes = [axes]
+
+        # Loss
+        axes[0].plot(self.history[0, :, 0], color='blue')
+        axes[0].plot(self.history[0, :, 1], color='red')
+        axes[0].xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes[0].set_title('Model loss', **csfont, fontsize=18)
+        axes[0].set_ylabel('Cross Entropy Loss', **csfont, fontsize=14)
+        axes[0].set_xlabel('Epoch', **csfont, fontsize=14)
+        axes[0].locator_params(nbins=20, axis='x')
+        axes[0].grid(True)
+        axes[0].legend(['train set', 'validation set'], loc='upper left')
+
+        # Accuracy
+        axes[1].plot(self.history[1, :, 0], color='blue')
+        axes[1].plot(self.history[1, :, 1], color='red')
+        axes[1].xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes[1].set_title('Model Accuracy', **csfont, fontsize=18)
+        axes[1].set_ylabel('Accuracy', **csfont, fontsize=14)
+        axes[1].set_xlabel('Epoch', **csfont, fontsize=14)
+        axes[1].locator_params(nbins=20, axis='x')
+        axes[1].grid(True)
+        axes[1].legend(['train set', 'validation set'], loc='upper left')
+
+        # Save the plot to .png file with a timestamp
+        timestamp = time.strftime('%b-%d-%Y_%H%M', time.localtime())
+        if not os.path.isdir('visualizations/'):
+            os.mkdir('visualizations/')
+        plt.savefig(f'visualizations/history_{timestamp}.png')
+
+        # show the plot
+        plt.show()
+        return 1
 
     # Make predictions on test set
     def predict(self):
