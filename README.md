@@ -1,8 +1,11 @@
 # CNN-in-NumPy
 The project serves a purpose of demystifying internal CNN mechanisms of forward and back propagation. 
 
-For this purpose we used multiple NumPy functions to train the CNN model on keras MNIST dataset.
-![image](https://user-images.githubusercontent.com/58808512/156906958-06937cab-a7fd-4d92-ae06-ac9a363ce5ea.png)
+For this purpose we used multiple NumPy functions to train the CNN model on the keras MNIST dataset.
+<p align="center">
+<!--     ![image](https://user-images.githubusercontent.com/58808512/156906991-1e5eac28-f9f9-4665-9f6a-ff545b9c293d.png) -->
+    <img src="https://user-images.githubusercontent.com/58808512/156906991-1e5eac28-f9f9-4665-9f6a-ff545b9c293d.png" />
+</p>
 
 The idea was to (+/-) replicate the tensorflows model of the given pipeline:
 
