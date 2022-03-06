@@ -45,3 +45,9 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
 * Gregor Baer [[github]](https://github.com/gregorbaer)
 * Marius Lupulescu [[github]](https://github.com/mariusadrian77)
 * Lachezar Popov
+
+## References:
+* [Mathematics behind backpropagation in CNN](https://medium.com/@ngocson2vn/a-gentle-explanation-of-backpropagation-in-convolutional-neural-network-cnn-1a70abff508b)
+* [Convolution derivation](https://pavisj.medium.com/convolutions-and-backpropagations-46026a8f5d2c)
+* [Max Pool derivation](https://medium.com/the-bioinformatics-press/only-numpy-understanding-back-propagation-for-max-pooling-layer-in-multi-layer-cnn-with-example-f7be891ee4b4)
+* [Block shaped matrices](https://stackoverflow.com/questions/16873441/form-a-big-2d-array-from-multiple-smaller-2d-arrays/16873755#16873755)
