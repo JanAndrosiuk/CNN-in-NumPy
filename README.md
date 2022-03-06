@@ -41,9 +41,7 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
 - [ ] Including easier modification of parameters such as number of hidden layers / number of convolution - maxpool sequences
 - [ ] Further optimization of functions
 
-Collaborators:
+## Collaborators:
 * Gregor Baer [[github]](https://github.com/gregorbaer)
 * Marius Lupulescu [[github]](https://github.com/mariusadrian77)
 * Lachezar Popov
-
-
