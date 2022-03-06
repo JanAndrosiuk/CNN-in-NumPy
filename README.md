@@ -57,3 +57,6 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
 * [Convolution derivation [medium]](https://pavisj.medium.com/convolutions-and-backpropagations-46026a8f5d2c)
 * [Max Pool derivation [medium]](https://medium.com/the-bioinformatics-press/only-numpy-understanding-back-propagation-for-max-pooling-layer-in-multi-layer-cnn-with-example-f7be891ee4b4)
 * [Block shaped matrices [stack]](https://stackoverflow.com/questions/16873441/form-a-big-2d-array-from-multiple-smaller-2d-arrays/16873755#16873755)
+
+## License
+MIT License | Copyright (c) 2021 Jan Androsiuk
