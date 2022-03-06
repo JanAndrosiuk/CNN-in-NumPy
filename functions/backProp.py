@@ -3,12 +3,18 @@ import opt_einsum as oe
 
 
 def relu_prime(z):
+    """
+    Derivative of the Rectified Linear Unit activation function
+    :param z: Pre-activation result
+    :return: derived input
+    """
     return (z > 0).astype(z.dtype)
 
 
 def block_4d(arr, window):
     """
-    # https://stackoverflow.com/a/16873755
+    Used for max-pooling derivative
+    Explanation is included in README references
     4d -> 5d
     window -> (window_height, window_width)
     """
@@ -23,9 +29,11 @@ def block_4d(arr, window):
 
 def unblock_5d(arr, hw):
     """
-    # https://stackoverflow.com/a/16873755
+    Used for max-pooling derivative
+    Explanation is included in README references
     5d -> 4d
     hw := (height, width)
+
     """
     return arr.reshape(
         arr.shape[1],
@@ -38,7 +46,12 @@ def unblock_5d(arr, hw):
 
 def max_pool_prime(matrix, pool):
     """
-    Derivative over MaxPool function
+    Derivative of MaxPool function
+    The explanation of the mechanism is linked in README file -> References
+    Makes use of block shaped matrices, which are also included in references
+    :param matrix: input
+    :param pool: pool size - usually (0,0); handles non-square shapes
+    :return: max pool derivative matrix
     """
 
     # Residual of height and width division over respective pool dimensions
@@ -60,19 +73,19 @@ def max_pool_prime(matrix, pool):
 
     split = block_4d(padded, pool)
 
-    # https://stackoverflow.com/a/42397281
     split_max_bool = (split == np.amax(split, axis=(3, 4), keepdims=1)).astype(float)
     return unblock_5d(split_max_bool, padded.shape[-2:])
 
 
 def c2fprime(conv_matrix, filters_matrix, use_oe):
     """
-    Convolution derivative over filter matrix
+    Second convolution derivative over filter matrix
     For now the function works only with 1 image at once
     later it should be generalized for multiple images (einsum function in return)
         e.g. with np.apply_along_axis() or np.apply_over_axes()
     # SHAPE of conv_matrix: [previous_conv_no_filters x height x width]
     # SHAPE of filters_matrix: [no_new_filters x filter_height x filter_width x previous_conv_no_filters]
+    :param use_oe: optimize np.einsum operation
     """
     # print(conv_matrix.shape, filters_matrix.shape)
 
@@ -90,12 +103,13 @@ def c2fprime(conv_matrix, filters_matrix, use_oe):
 
 def c2xprime(conv_matrix, filters_matrix, use_oe):
     """
-    Convolution derivative over the input of this convolution
+    Second convolution derivative over convolution input
     conv_matrix: c2 filters matrix with 0 padding on height and height
         (value of those paddings = filters_matrix width and height - 1)
         # conv_matrix dim before padding = [n_filters x width x height x previous convolution n_filters]
     filters_matrix: derivation of the error over c2 output = delta
         # dim depends - in this case: [(1 x 64 x 24 x 24)]
+    :param use_oe: optimize np.einsum operation
     """
 
     # horizontal and vertical paddings:
@@ -122,12 +136,13 @@ def c2xprime(conv_matrix, filters_matrix, use_oe):
 
 def c1fprime(conv_matrix, filters_matrix, use_oe):
     """
-    Convolution derivative over 1st filter matrix (w0)
-    conv_matrix - input image
+    Returns first convolution derivative over 1st filter matrix (w0)
+    conv_matrix - input image (x_train in CNN class (model.py))
         e.g. [1, 28, 28, 1]
     filters_matrix - delta
         e.g. dim [1 x 32 x 26 x 26]
     1st dims of those matrices stand for batch size and are not supported yet
+    :param use_oe: optimize np.einsum operation
     """
 
     conv_matrix = np.lib.stride_tricks.sliding_window_view(

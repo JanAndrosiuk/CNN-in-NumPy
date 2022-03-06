@@ -8,8 +8,19 @@ import time
 
 
 class CNN:
+    """
+    CNN model framework
+    The class includes functions responsible for:
+        - Initializing weights and other necessary matrices
+        - Forward propagation of the input
+        - Backward propagation of the error
+        - Updating weight matrices
+        - Combining above operations to train the model and check it's performance on the validation set
+        - Saving and visualizing train-validation results
+    Apart from class functions, it also uses those from functions/forwardProp.py and functions/backProp.py
+    """
 
-    # Initialize class by choosing by choosing parameters
+    # Initialize class by choosing by choosing CNN parameters
     def __init__(
         # x_train and y_train are added here only to get weight matrices shapes,
         # those values won't be forward or backward propagated
@@ -92,7 +103,11 @@ class CNN:
 
     # 2. Forward propagate and calculate error
     def forward_propagate(self, img_array):
-
+        """
+        Forward propagation of the model
+        Calculates the CNN output and saves it (self.activations[-1])
+        :param img_array: train set input
+        """
         # Normalize input data
         normalize_features(img_array)
         # print(img_array.shape, img_array.min(), img_array.max())
@@ -142,29 +157,30 @@ class CNN:
 
         return 1
 
-    # 3. Back propagate error
     def backward_propagate(self, inp_array, out_array):
+        """
+        Calculates error derivative matrices over each weight matrix
+        :param inp_array: X
+        :param out_array: y
+        """
 
         # DENSE LAYERS DERIVATIONS
         # 2nd DENSE (w3) derivation
-        # delta = self.activations[4] - self.y_train[:1]
         delta = self.activations[4] - out_array
-        # print(delta.shape)
         self.derivatives[3] = delta.T.dot(self.activations[3]).T
         # print("dlw3: ", dlw3.T.shape)
 
         # 1st DENSE (w2) derivation
         delta = delta.dot(self.weights[3].T).T * relu_prime(self.pre_act[2]).T
-        # print(delta.shape)
         self.derivatives[2] = delta.dot(self.activations[2]).T
         # print("dlw2: ", dlw2.shape)
-        # print(delta.shape)
 
         # MAX POOL DERIVATION
         delta = delta.T.dot(self.weights[2].T).reshape(self.pooled_shape)
 
         # Stretch delta so that it corresponds to C2 output
-        # https://medium.com/the-bioinformatics-press/only-numpy-understanding-back-propagation-for-max-pooling-layer-in-multi-layer-cnn-with-example-f7be891ee4b4
+        # The reason behind the stretching is explained in the medium article about MaxPool derivation
+        # It can be found in README-References
         delta = np.repeat(
             np.repeat(
                 delta, self.pool_sizes[0][1], axis=3
@@ -186,16 +202,28 @@ class CNN:
         delta = delta * relu_prime(self.pre_act[0])
         self.derivatives[0] = c1fprime(inp_array, delta, self.use_oe)
         # print("dlw0: ", dlw0.shape)
+
         return 1
 
-    # 4. Update weight matrices
     def update_weights(self):
+        """
+        Updates weight matrices with derivative matrices calculated in backward_propagate() function
+        Learning rate (eta) is set in the class constructor
+        """
         for w in range(len(self.weights)):
             self.weights[w] = self.weights[w] - self.eta * self.derivatives[w]
         return 1
 
-    # Train function
     def train(self, inp_array, out_array, train_val_split=0.8):
+        """
+        For each epoch performs:
+            - training: forward propagation, backward propagation, and weights update
+            - validation: forward propagation on updated weights
+            - saves results of loss and accuracy metrics to self.history matrix
+        :param inp_array: X
+        :param out_array: y
+        :param train_val_split: percentage of train dataset split between train and validation sets
+        """
 
         # Split into train and validation sets
         train_val_size = int(np.floor(train_val_split * inp_array.shape[0]))
@@ -269,8 +297,8 @@ class CNN:
 
     def plot_history(self):
         """
-        Plot train-validation history of loss and accuracy metrics
-        :return:
+        Plot train-validation history for loss and accuracy metrics
+        Saves the plot with a timestamp to visualizations directory
         """
         csfont = {'fontname': 'Times New Roman'}
         fig, axes = plt.subplots(1, 2, figsize=(18, 7))
@@ -308,6 +336,9 @@ class CNN:
         plt.show()
         return 1
 
-    # Make predictions on test set
     def predict(self):
+        """
+        Makes predictions on test set
+        :return:
+        """
         pass
