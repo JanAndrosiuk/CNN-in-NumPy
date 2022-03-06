@@ -1,4 +1,5 @@
 import numpy as np
+import opt_einsum as oe
 
 
 def relu_prime(z):
@@ -64,7 +65,7 @@ def max_pool_prime(matrix, pool):
     return unblock_5d(split_max_bool, padded.shape[-2:])
 
 
-def c2fprime(conv_matrix, filters_matrix):
+def c2fprime(conv_matrix, filters_matrix, use_oe):
     """
     Convolution derivative over filter matrix
     For now the function works only with 1 image at once
@@ -75,16 +76,19 @@ def c2fprime(conv_matrix, filters_matrix):
     """
     # print(conv_matrix.shape, filters_matrix.shape)
 
-    windowed = np.lib.stride_tricks.sliding_window_view(
+    conv_matrix = np.lib.stride_tricks.sliding_window_view(
         conv_matrix,
         window_shape=(filters_matrix.shape[2], filters_matrix.shape[3]),  # filter height and width
         axis=(2, 3)  # conv_matrix height and width
     )
 
-    return np.einsum('abcjk,ijk->ibca', windowed[0], filters_matrix[0], optimize=True)
+    if use_oe:
+        return oe.contract('abcjk,ijk->ibca', conv_matrix[0], filters_matrix[0])
+    else:
+        return np.einsum('abcjk,ijk->ibca', conv_matrix[0], filters_matrix[0], optimize=True)
 
 
-def c2xprime(conv_matrix, filters_matrix):
+def c2xprime(conv_matrix, filters_matrix, use_oe):
     """
     Convolution derivative over the input of this convolution
     conv_matrix: c2 filters matrix with 0 padding on height and height
@@ -97,23 +101,26 @@ def c2xprime(conv_matrix, filters_matrix):
     # horizontal and vertical paddings:
     pad_h, pad_v = filters_matrix.shape[-2:]
 
-    padded = np.pad(conv_matrix, (
+    conv_matrix = np.pad(conv_matrix, (
         (0, 0),  # no padding for n_filters dimension
         (pad_h - 1, pad_h - 1),
         (pad_v - 1, pad_v - 1),
         (0, 0)  # no padding for number of features
     ), 'constant')
 
-    windowed = np.lib.stride_tricks.sliding_window_view(
-        padded,
+    conv_matrix = np.lib.stride_tricks.sliding_window_view(
+        conv_matrix,
         window_shape=(filters_matrix.shape[2], filters_matrix.shape[3]),  # filter height and width
         axis=(1, 2)  # conv_matrix height and width
     )
 
-    return np.einsum('iyzxjk,ijk->xyz', windowed, filters_matrix[0], optimize=True)
+    if use_oe:
+        return oe.contract('iyzxjk,ijk->xyz', conv_matrix, filters_matrix[0])
+    else:
+        return np.einsum('iyzxjk,ijk->xyz', conv_matrix, filters_matrix[0], optimize=True)
 
 
-def c1fprime(conv_matrix, filters_matrix):
+def c1fprime(conv_matrix, filters_matrix, use_oe):
     """
     Convolution derivative over 1st filter matrix (w0)
     conv_matrix - input image
@@ -123,10 +130,13 @@ def c1fprime(conv_matrix, filters_matrix):
     1st dims of those matrices stand for batch size and are not supported yet
     """
 
-    windowed = np.lib.stride_tricks.sliding_window_view(
+    conv_matrix = np.lib.stride_tricks.sliding_window_view(
         conv_matrix,
         window_shape=(filters_matrix.shape[2], filters_matrix.shape[3]),  # filter height and width
         axis=(1, 2)  # conv_matrix height and width
     )
 
-    return np.einsum('xyzbc,nbc->nxyz', windowed[0], filters_matrix[0], optimize=True)
+    if use_oe:
+        return oe.contract('xyzbc,nbc->nxyz', conv_matrix[0], filters_matrix[0])
+    else:
+        return np.einsum('xyzbc,nbc->nxyz', conv_matrix[0], filters_matrix[0], optimize=True)

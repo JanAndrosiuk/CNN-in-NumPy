@@ -1,5 +1,6 @@
 from tensorflow import keras
 from model import *
+# import numba as nb
 
 
 def main():
@@ -17,7 +18,7 @@ def main():
     cnn = CNN(x_train[:1], y_train[:1])
 
     # Performing training algorithm
-    cnn.train()
+    history = cnn.train(x_train, y_train)
 
     return 1
 

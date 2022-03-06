@@ -1,5 +1,5 @@
 import numpy as np
-
+import opt_einsum as oe
 
 def random_filters(no_filters, size=5, features=3):
     filters_matrix = np.random.randn(
@@ -9,17 +9,19 @@ def random_filters(no_filters, size=5, features=3):
     return filters_matrix
 
 
-def conv1(img_array, filters_matrix):
+def conv1(img_array, filters_matrix, use_oe):
     windowed = np.lib.stride_tricks.sliding_window_view(
         img_array,
         window_shape=(filters_matrix.shape[1], filters_matrix.shape[2]),
         axis=(1, 2)
     )
+    if use_oe:
+        return oe.contract('nabjkl,iklj->niab', windowed, filters_matrix)
+    else:
+        return np.einsum('nabjkl,iklj->niab', windowed, filters_matrix, optimize=True)
 
-    return np.einsum('nabjkl,iklj->niab', windowed, filters_matrix, optimize=True)
 
-
-def conv2(conv_matrix, filters_matrix):
+def conv2(conv_matrix, filters_matrix, use_oe):
     """
     Take output of the convolution as input and produce feature maps for every given filter
     SHAPE of conv_matrix: [previous_conv_no_filters x height x width]
@@ -27,14 +29,17 @@ def conv2(conv_matrix, filters_matrix):
     """
 
     # Split windows
-    windowed = np.lib.stride_tricks.sliding_window_view(
+    conv_matrix = np.lib.stride_tricks.sliding_window_view(
         conv_matrix,
         window_shape=(filters_matrix.shape[1], filters_matrix.shape[2]),
         axis=(2, 3)
     )
 
     # perform multiplication using einstein notation
-    return np.einsum('albcjk,ijkl->aibc', windowed, filters_matrix, optimize=True)
+    if use_oe:
+        return oe.contract('albcjk,ijkl->aibc', conv_matrix, filters_matrix)
+    else:
+        return np.einsum('albcjk,ijkl->aibc', conv_matrix, filters_matrix, optimize=True)
 
 
 def max_pool(matrix, pool):

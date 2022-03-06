@@ -1,18 +1,20 @@
 from functions.backProp import *
 from functions.forwardProp import *
+from tqdm import tqdm
 
 
 class CNN:
 
     # Initialize class by choosing by choosing parameters
     def __init__(
+        # x_train and y_train are added here only to get weight matrices shapes,
+        # those values won't be forward or backward propagated
         self, x_train, y_train, n_filters=(32, 64), filter_sizes=((3, 3), (3, 3)),
         pool_sizes=((2, 2),), dense_nodes=(128, 10), img_features=1,
-        n_activations=3, eta=0.001, epochs=10
+        n_activations=3, eta=0.001, epochs=10, use_oe=True
     ):
 
         self.x_train = x_train
-        normalize_features(self.x_train)
         self.y_train = y_train
         self.n_filters = n_filters
         self.filter_sizes = filter_sizes
@@ -24,6 +26,7 @@ class CNN:
         self.batch_size = self.x_train.shape[0]
         self.eta = eta
         self.epochs = epochs
+        self.use_oe = use_oe
 
         # 1.1 CALCULATE FINAL SHAPE FOR THE DENSE LAYERS
         res_shape = list(self.x_train.shape)
@@ -83,13 +86,14 @@ class CNN:
         self.pre_act = activations.copy()
 
     # 2. Forward propagate and calculate error
-    def forward_propagate(self):
+    def forward_propagate(self, img_array):
 
-        # Load input data from the class
-        # print(self.x_train.shape, self.x_train.min(), self.x_train.max())
+        # Normalize input data
+        normalize_features(img_array)
+        # print(img_array.shape, img_array.min(), img_array.max())
 
         # 1st convolution
-        res = conv1(self.x_train, self.weights[0])
+        res = conv1(img_array, self.weights[0], self.use_oe)
         self.pre_act[0] = res
         relu_fun(res)
         self.activations[0] = res
@@ -97,7 +101,7 @@ class CNN:
         # print("AFTER 1ST CONV: ", res.min(), res.max())
 
         # 2nd convolution
-        res = conv2(res, self.weights[1])
+        res = conv2(res, self.weights[1], self.use_oe)
         self.pre_act[1] = res
         relu_fun(res)
         self.activations[1] = res
@@ -134,11 +138,12 @@ class CNN:
         return 1
 
     # 3. Back propagate error
-    def backprop(self):
+    def backward_propagate(self, inp_array, out_array):
 
         # DENSE LAYERS DERIVATIONS
         # 2nd DENSE (w3) derivation
-        delta = self.activations[4] - self.y_train[:1]
+        # delta = self.activations[4] - self.y_train[:1]
+        delta = self.activations[4] - out_array
         # print(delta.shape)
         self.derivatives[3] = delta.T.dot(self.activations[3]).T
         # print("dlw3: ", dlw3.T.shape)
@@ -168,13 +173,13 @@ class CNN:
         delta = delta * relu_prime(self.pre_act[1])
 
         # C2 (w1) DERIVATION
-        self.derivatives[1] = c2fprime(self.activations[0], delta)
+        self.derivatives[1] = c2fprime(self.activations[0], delta, self.use_oe)
         # print("dlw1: ", dlw1.shape)
 
         # C1 (w0) DERIVATION
-        delta = c2xprime(self.weights[1], delta)
+        delta = c2xprime(self.weights[1], delta, self.use_oe)
         delta = delta * relu_prime(self.pre_act[0])
-        self.derivatives[0] = c1fprime(self.x_train, delta)
+        self.derivatives[0] = c1fprime(inp_array, delta, self.use_oe)
         # print("dlw0: ", dlw0.shape)
         return 1
 
@@ -185,23 +190,56 @@ class CNN:
         return 1
 
     # Train function
-    def train(self):
+    def train(self, inp_array, out_array, train_val_split=0.8):
 
-        # for loop for training set
-        losses = []
+        # Split into train and validation sets
+        train_val_size = int(np.floor(train_val_split * inp_array.shape[0]))
+        train_x, val_x = inp_array[:train_val_size, :], inp_array[train_val_size:, :]
+        train_y, val_y = out_array[:train_val_size, :], inp_array[train_val_size:, :]
+
+        # Store the history of training over each epoch
+        losses = np.zeros((self.epochs, 2))
+        losses.fill(np.nan)
+
         for e in range(self.epochs):
-            self.forward_propagate()
-            # print(self.activations[-1][0])
-            loss = -np.log(
-                self.activations[-1][0][
-                    np.where(self.y_train[:1][0])[0][0]
-                ]
-            )
-            losses.append(loss)
-            print(f"EPOCH {e}:", loss)
-            self.backprop()
-            self.update_weights()
 
-        # for loop for validation fraction of train set
+            # 1. Train Loop
+            loss_train = 0
+            for i in tqdm(range(train_x.shape[0])):
+                # print(train_x[i].shape, train_y[i].shape)
+                self.forward_propagate(np.expand_dims(train_x[i], 0))
+                loss_i = -np.log(
+                    self.activations[-1][0][
+                        np.where(train_y[i])[0][0]
+                    ]
+                )
+                # print(f"TRAINING SAMPLE {i} LOSS: {loss_i}")
 
-        return 1
+                loss_train += loss_i
+                self.backward_propagate(
+                    np.expand_dims(train_x[i], 0),
+                    np.expand_dims(train_y[i], 0)
+                )
+                self.update_weights()
+            losses[e, 0] = loss_train / train_x.shape[0]
+
+            # 2. Validation Loop
+            loss_val = 0
+            for j in tqdm(range(val_x.shape[0])):
+                self.forward_propagate(np.expand_dims(val_x[j], 0))
+                loss_j = -np.log(
+                    self.activations[-1][0][
+                        np.where(val_y[j])[0][0]
+                    ]
+                )
+                # print(f"VAL SAMPLE {i} LOSS: {loss_i}")
+                loss_val += loss_j
+            losses[e, 1] = loss_val / val_x.shape[0]
+
+            # print(f"EPOCH {e}, AVERAGE TRAIN LOSS: {loss_train/train_x.shape[0]}")
+
+        return losses
+
+    # Make predictions on test set
+    def predict(self):
+        pass
