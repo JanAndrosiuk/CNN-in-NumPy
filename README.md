@@ -37,6 +37,12 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
 3. Handles one image at the time
 4. Doesn't include bias matrices
 
+## Sample run results
+
+> *Model was initially run on 625 training sample (500 for actual training, and 125 for validation) on 10 epochs. 
+Plots below show the history of loss and accuracy for this approach*
+
+![](visualizations/history_Mar-06-2022_1629.png)
 
 ## To-be-done
 - [ ] optimization by translating to machine code (numba / cython)
