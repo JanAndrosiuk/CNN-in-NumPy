@@ -26,7 +26,7 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
         metrics='accuracy'
     )
 ```
-## Simplifications / constraints:
+## Simplifications / constraints
 
 1. The model uses simple gradient descent optimizer
 2. For now the model is static, therefore adjusting of layers order is limited
@@ -41,12 +41,12 @@ The idea was to (+/-) replicate the tensorflows model of the given pipeline:
 - [ ] Including easier modification of parameters such as number of hidden layers / number of convolution - maxpool sequences
 - [ ] Further optimization of functions
 
-## Collaborators:
+## Collaborators
 * Gregor Baer [[github]](https://github.com/gregorbaer)
 * Marius Lupulescu [[github]](https://github.com/mariusadrian77)
 * Lachezar Popov
 
-## References:
+## References
 * [Mathematics behind backpropagation in CNN](https://medium.com/@ngocson2vn/a-gentle-explanation-of-backpropagation-in-convolutional-neural-network-cnn-1a70abff508b)
 * [Convolution derivation](https://pavisj.medium.com/convolutions-and-backpropagations-46026a8f5d2c)
 * [Max Pool derivation](https://medium.com/the-bioinformatics-press/only-numpy-understanding-back-propagation-for-max-pooling-layer-in-multi-layer-cnn-with-example-f7be891ee4b4)
